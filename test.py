@@ -1,8 +1,5 @@
-import re
+import pandas as pd
 
-# 原始字符串
-text = "310运输出渣1车，杂物2车，209回风出材料2车，209运输出材料2车，副斜井底出渣2车，道轨1车，齿轨1车"
-
-# 使用正则表达式拆分
-matches = re.findall(r'([^\s，]+?)(装|出)(([^\s出]+?)(\d+)车，?)+?', text)
-print(matches)
+file_path = 'cleaned_data.csv'
+df = pd.read_csv(file_path)
+print(df)
