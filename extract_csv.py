@@ -16,11 +16,30 @@ data = {
     '目的地':[]
 }
 
-for sheet_name in sheet_names:
+# 5.9表之后与5.9及之前格式不一样，还有4.2
+diff_sheet_index_1 = 26
+diff_sheet_index_2 = 63
+
+for index, sheet_name in enumerate(sheet_names):
+    if index <= diff_sheet_index_2:
+        date_index = (0, 4) #日期位置
+        mate_info_index = 4
+        mate_num_index = 3
+        if index <= diff_sheet_index_1:
+            loc_index = 5
+        else:
+            loc_index = 6
+    else:
+        date_index = (0, 3) #日期位置
+        mate_info_index = 3
+        mate_num_index = 2
+        loc_index = 5
     # 按顺序读取每一张表格
     df = pd.read_excel(xls, sheet_name=sheet_name)
     # 从表格获得日期信息
-    date = df.iloc[0,3].split('：')[-1]
+    date = df.iloc[date_index[0],date_index[1]].split('：')[-1]
+    if date[-1] == '日':
+        date.rstrip('日')
     date = date.replace('年', '.')
     date = date.replace('月', '.')
     # 早班、中班与夜班的索引
@@ -36,11 +55,12 @@ for sheet_name in sheet_names:
         elif i >= index_night:
             shift = '夜班'
 
-        if not pd.isna(df.iloc[i,3]):
-            if not pd.isna(df.iloc[i, 1]):
+        if not pd.isna(df.iloc[i,mate_info_index]):
+            text = df.iloc[i,mate_info_index]
+            matches2 = re.findall(r'([^\s，]+?)(装|出)(((([^\s出，]+?)(\d+)车，?)+)|(((\d+)车([^\s出，]+)，?)+))', text)
+            if not pd.isna(df.iloc[i, mate_num_index]):
                 # 运入
-                text = df.iloc[i,3]
-                matches = re.findall(r'([^\s，]+?)(\d+)车，?', text)
+                matches = re.findall(r'([^\s，]+?)(\d+)车(，|、)?', text)
                 for j in range(0, len(matches)):
                     data['日期'].append(date)
                     data['队组'].append(df.iloc[i,1])
@@ -48,13 +68,12 @@ for sheet_name in sheet_names:
                     data['物料'].append(matches[j][0])
                     data['数量'].append(matches[j][1])
                     data['出发点'].append('井口')
-                    data['目的地'].append(df.iloc[i,5])
-            elif not pd.isna(df.iloc[i, 4]):
+                    data['目的地'].append(df.iloc[i,loc_index])
+            elif  matches2:
                 # 运出
-                text = df.iloc[i,3]
-                matches = re.findall(r'([^\s，]+?)(装|出)((([^\s出]+?)(\d+)车，?)+)', text)
+                matches = matches2
                 for j in range(0, len(matches)):
-                    match_material = re.findall(r'(\S*?)(\d+)车，?', matches[j][2])
+                    match_material = re.findall(r'([^\s，计、）]+?)(\d+)车(，|、)?', matches[j][2])
                     for k in range(0, len(match_material)):
                         data['日期'].append(date)
                         data['队组'].append(df.iloc[i,1])
